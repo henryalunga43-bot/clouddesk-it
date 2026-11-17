@@ -130,5 +130,45 @@ def update_ticket_status(ticket_id):
     }), 404
 
 
+@app.patch("/api/tickets/<ticket_id>/assign")
+def assign_ticket(ticket_id):
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify({
+            "error": "A JSON object is required"
+        }), 400
+
+    technician = data.get("assigned_to")
+
+    if not isinstance(technician, str) or not technician.strip():
+        return jsonify({
+            "error": "assigned_to must be a non-empty string"
+        }), 400
+
+    technician = technician.strip()
+
+    if len(technician) > 100:
+        return jsonify({
+            "error": "assigned_to must be 100 characters or fewer"
+        }), 400
+
+    for ticket in tickets:
+        if ticket["id"] == ticket_id:
+            ticket["assigned_to"] = technician
+            ticket["updated_at"] = (
+                datetime.now(timezone.utc).isoformat()
+            )
+
+            return jsonify({
+                "message": "Ticket assigned successfully",
+                "ticket": ticket
+            }), 200
+
+    return jsonify({
+        "error": "Ticket not found"
+    }), 404
+
+
 if __name__ == "__main__":
     app.run(debug=True)
