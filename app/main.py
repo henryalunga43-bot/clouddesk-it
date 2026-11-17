@@ -81,5 +81,54 @@ def get_tickets():
     }), 200
 
 
+
+@app.patch("/api/tickets/<ticket_id>/status")
+def update_ticket_status(ticket_id):
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify({
+            "error": "A JSON object is required"
+        }), 400
+
+    new_status = data.get("status")
+
+    allowed_statuses = [
+        "open",
+        "in_progress",
+        "resolved",
+        "closed"
+    ]
+
+    if not isinstance(new_status, str):
+        return jsonify({
+            "error": "Status must be a string"
+        }), 400
+
+    new_status = new_status.strip().lower()
+
+    if new_status not in allowed_statuses:
+        return jsonify({
+            "error": "Invalid ticket status",
+            "allowed_statuses": allowed_statuses
+        }), 400
+
+    for ticket in tickets:
+        if ticket["id"] == ticket_id:
+            ticket["status"] = new_status
+            ticket["updated_at"] = (
+                datetime.now(timezone.utc).isoformat()
+            )
+
+            return jsonify({
+                "message": "Ticket status updated",
+                "ticket": ticket
+            }), 200
+
+    return jsonify({
+        "error": "Ticket not found"
+    }), 404
+
+
 if __name__ == "__main__":
     app.run(debug=True)
